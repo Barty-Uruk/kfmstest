@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"time"
 
-	log "github.com/Krew-Guru/kas/pkg/logger"
-	"github.com/Krew-Guru/kfms/configs"
+	"github.com/Barty-Uruk/kfmstest/configs"
+	log "github.com/Barty-Uruk/kfmstest/pkg/logger"
 )
 
 func RunServer(ctx context.Context, logger *log.Logger, quit chan bool, handler http.Handler, confServer configs.Http, confOpentracing configs.Opentracing) {

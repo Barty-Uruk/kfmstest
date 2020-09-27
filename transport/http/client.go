@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/Krew-Guru/kas/pkg/logger"
+	log "github.com/Barty-Uruk/kfmstest/pkg/logger"
 )
 
 type Client struct {

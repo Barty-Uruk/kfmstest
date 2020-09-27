@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/Krew-Guru/kas/configs"
-	logger "github.com/Krew-Guru/kas/pkg/logger"
+	"github.com/Barty-Uruk/kfmstest/configs"
+	logger "github.com/Barty-Uruk/kfmstest/pkg/logger"
 )
 
 func OpentracingMiddleware(confOpentracing configs.Opentracing, next http.Handler) http.Handler {

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/Krew-Guru/kas/configs"
+	"github.com/Barty-Uruk/kfmstest/configs"
 )
 
 func TestRunServer(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Krew-Guru/kas/configs"
+	"github.com/Barty-Uruk/kfmstest/configs"
 )
 
 func TestClient_Request(t *testing.T) {

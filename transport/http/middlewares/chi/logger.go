@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/middleware"
-	log "github.com/Krew-Guru/kas/pkg/logger"
+	log "github.com/Barty-Uruk/kfmstest/pkg/logger"
 )
 
 var DefaultLogger = middleware.RequestLogger(&middleware.DefaultLogFormatter{Logger: log.Log, NoColor: false})

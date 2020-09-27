@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	log "github.com/Krew-Guru/kas/pkg/logger"
+	log "github.com/Barty-Uruk/kfmstest/pkg/logger"
 )
 
 func RequestLogger(logger *log.Logger) func(next http.Handler) http.Handler {

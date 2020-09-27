@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Krew-Guru/kas/pkg/logger"
-	httpTransport "github.com/Krew-Guru/kfms/pkg/transport/http"
+	"github.com/Barty-Uruk/kfmstest/pkg/logger"
+	httpTransport "github.com/Barty-Uruk/kfmstest/pkg/transport/http"
 )
 
 var AppIsReady = false
