@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	log "pkg/logger"
-
+	"github.com/Barty-Uruk/kfmstest/pkg/health"
+	log "github.com/Barty-Uruk/kfmstest/pkg/logger"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -43,6 +43,12 @@ func NewHttpHandler(logger *log.Logger, s Service) http.Handler {
 		encodeHelloResponse,
 		options...,
 	))
+	r.Method("POST", "/upload", kithttp.NewServer(
+		makeUploadFileEndpoint(s),
+		decodeUploadFileRequest,
+		encodeUploadFileResponse,
+		options...,
+	))
 
 	logger.Info("msg", "handler started")
 	return r
@@ -71,7 +77,22 @@ func decodeHelloRequest(ctx context.Context, r *http.Request) (interface{}, erro
 
 	return request, nil
 }
-
+func encodeUploadFileResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+	if e, ok := response.(errorer); ok && e.error() != nil {
+		// Not a Go kit transport error, but a business-logic error.
+		// Provide those as HTTP errors.
+		encodeErrorResponse(ctx, e.error(), w)
+		return nil
+	}
+	resp, ok := response.(UploadResponse)
+	if !ok {
+		encodeErrorResponse(ctx, errors.New("error upload file"), w)
+		return nil
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	return json.NewEncoder(w).Encode(resp)
+}
 func encodeHelloResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(errorer); ok && e.error() != nil {
 		// Not a Go kit transport error, but a business-logic error.
@@ -86,7 +107,7 @@ func encodeHelloResponse(ctx context.Context, w http.ResponseWriter, response in
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	return json.NewEncoder(w).Encode(resp.Body)
+	return json.NewEncoder(w).Encode(resp)
 }
 
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
@@ -129,8 +150,17 @@ func codeFrom(err error) int {
 	}
 }
 
-func decodeGetLivenessRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	return health.GetLivenessRequest{}, nil
+func decodeUploadFileRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	file, info, err := r.FormFile("file")
+	if err != nil {
+		return nil, err
+	}
+	req := UploadRequest{
+		File:       file,
+		FolderName: "test",
+		FileName:   info.Filename,
+	}
+	return req, req.validate()
 }
 
 func decodeGetReadinessRequest(_ context.Context, r *http.Request) (interface{}, error) {
