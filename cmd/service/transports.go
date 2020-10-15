@@ -44,7 +44,7 @@ func NewHttpHandler(logger *log.Logger, s Service) http.Handler {
 		encodeHelloResponse,
 		options...,
 	))
-	r.Method("POST", "/upload/", kithttp.NewServer(
+	r.Method("POST", "/upload", kithttp.NewServer(
 		makeUploadFileEndpoint(s),
 		decodeUploadFileRequest,
 		encodeUploadFileResponse,
