@@ -26,7 +26,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(cfg.S3.Bucket, cfg.S3.RootFolderName)
 	// print config
 	if err := cfg.Print(); err != nil {
 		fmt.Fprintf(os.Stderr, "print config: %s", err)

@@ -10,8 +10,14 @@ type UploadRequest struct {
 	FolderName string        `json:"folder_name"`
 	File       io.ReadSeeker `json:"file"`
 }
+type DownloadRequest struct {
+	FileName string `json:"file_name"`
+}
 type UploadResponse struct {
 	FileLink string `json:"file_link"`
+}
+type DownloadResponse struct {
+	File io.Reader
 }
 
 func (ur *UploadRequest) validate() error {
@@ -24,5 +30,11 @@ func (ur *UploadRequest) validate() error {
 	if ur.File == nil {
 		return errors.New("empty file")
 	}
+	return nil
+}
+func (ur *DownloadRequest) validate() error {
+	// if ur.FileName == "" {
+	// 	return errors.New("empty filename")
+	// }
 	return nil
 }

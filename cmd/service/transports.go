@@ -3,10 +3,11 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
+	"io"
 	"net/http"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/Barty-Uruk/kfmstest/pkg/health"
 	log "github.com/Barty-Uruk/kfmstest/pkg/logger"
@@ -38,16 +39,17 @@ func NewHttpHandler(logger *log.Logger, s Service) http.Handler {
 		kithttp.ServerErrorLogger(logger),
 		kithttp.ServerErrorEncoder(encodeErrorResponse),
 	}
-	r.Method("GET", "/hello", kithttp.NewServer(
-		makeHelloEndpoint(s),
-		decodeHelloRequest,
-		encodeHelloResponse,
-		options...,
-	))
+	endpoints := MakeEndpoints(s)
 	r.Method("POST", "/upload", kithttp.NewServer(
-		makeUploadFileEndpoint(s),
+		endpoints.UploadFile,
 		decodeUploadFileRequest,
 		encodeUploadFileResponse,
+		options...,
+	))
+	r.Method("GET", "/download", kithttp.NewServer(
+		endpoints.DownloadFile,
+		decodeDownloadFileRequest,
+		encodeDownloadResponse,
 		options...,
 	))
 
@@ -55,29 +57,23 @@ func NewHttpHandler(logger *log.Logger, s Service) http.Handler {
 	return r
 }
 
-func encodeTokenValidationResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeDownloadResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(errorer); ok && e.error() != nil {
 		// Not a Go kit transport error, but a business-logic error.
 		// Provide those as HTTP errors.
 		encodeErrorResponse(ctx, e.error(), w)
 		return nil
 	}
-	w.WriteHeader(http.StatusOK)
-	return nil
+
+	resp, ok := response.(DownloadResponse)
+	if !ok {
+		encodeErrorResponse(ctx, errors.New("error download file"), w)
+		return nil
+	}
+	_, err := io.Copy(w, resp.File)
+	return errors.Wrap(err, "copy file error")
 }
 
-// login
-func decodeHelloRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-	var request HelloRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		return nil, ErrInvalidArgument
-	}
-	if request.Name == "" {
-		return nil, ErrInvalidArgument
-	}
-
-	return request, nil
-}
 func encodeUploadFileResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(errorer); ok && e.error() != nil {
 		// Not a Go kit transport error, but a business-logic error.
@@ -93,34 +89,6 @@ func encodeUploadFileResponse(ctx context.Context, w http.ResponseWriter, respon
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	return json.NewEncoder(w).Encode(resp)
-}
-func encodeHelloResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	if e, ok := response.(errorer); ok && e.error() != nil {
-		// Not a Go kit transport error, but a business-logic error.
-		// Provide those as HTTP errors.
-		encodeErrorResponse(ctx, e.error(), w)
-		return nil
-	}
-	resp, ok := response.(HelloResponse)
-	if !ok {
-		encodeErrorResponse(ctx, ErrTokenConvertationError, w)
-		return nil
-	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	return json.NewEncoder(w).Encode(resp)
-}
-
-func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	if e, ok := response.(errorer); ok && e.error() != nil {
-		// Not a Go kit transport error, but a business-logic error.
-		// Provide those as HTTP errors.
-		encodeErrorResponse(ctx, e.error(), w)
-		return nil
-	}
-	//log.Debug("response", fmt.Sprintf("%#v", response))
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	return json.NewEncoder(w).Encode(response)
 }
 
 type errorer interface {
@@ -151,13 +119,19 @@ func codeFrom(err error) int {
 	}
 }
 
+func decodeDownloadFileRequest(_ context.Context, r *http.Request) (interface{}, error) {
+
+	req := DownloadRequest{
+		FileName: r.URL.Query().Get("filename"),
+	}
+	return req, req.validate()
+}
 func decodeUploadFileRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	file, info, err := r.FormFile("file")
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-	fmt.Println(file, "=========", info.Size)
 
 	req := UploadRequest{
 		File:       file,
